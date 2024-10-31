@@ -3,6 +3,8 @@ library(readxl)
 library(countries) # potrzebne aby szybko wybrać z un_wpp tylko kraje, a nie np UE czy kontynent
 library(ggplot2)
 library(africamonitor) # potrzebne aby wybrać same kraje afrykańskie
+library(ggridges) # dodatek do ggplot, potrzebne do wykresu korzystającego z unigme_by_sex_processed
+library(countrycode) # potrzebne do dopasowania krajów do kontynentów dla wykresu korzystającego z unigme_by_sex_processed
 
 
 un_wpp <- read.csv("WPP2024_Demographic_Indicators_Medium.csv.gz")
@@ -110,3 +112,59 @@ ggplot(causes_death_processed |>
   geom_bar(position = 'fill', stat="identity")
 
 # TO - DO: poprawić wykresy na bardziej zjadliwe i skorzystać z danych dla subregions i sex-specific
+
+
+
+unigme_by_sex <- read_xlsx("UNIGME-2023-Sex-specific-U5MR-and-IMR-database.xlsx",3)
+
+unigme_by_sex_processed <- unigme_by_sex |>
+  rename(country = "Sex-specific under-five mortality rate (deaths per 1,000 live births)",survey_name='...3', year='...4', 
+         sex = '...6', reference_date = '...13', u5mr = '...14', standard_error = '...15') |> 
+  select(country, survey_name, year, sex, reference_date, u5mr, standard_error) |> 
+  slice(-(1:2)) 
+
+unigme_by_sex_processed$continent = countrycode(sourcevar = as.data.frame(unigme_by_sex_processed)[, "country"],
+                                                origin = "country.name",
+                                                destination = "continent")
+
+ggplot(unigme_by_sex_processed |>
+         filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex == 'Female') |>
+         group_by(country) |> 
+         slice_max(n= 1,order_by=tibble(year,reference_date)),
+       aes(x = as.numeric(u5mr), y = continent, fill = continent)) +
+  stat_density_ridges(scale = 1.5, alpha = 0.7) +
+  scale_x_sqrt() +
+  theme(
+    legend.position="none",
+    #panel.spacing = unit(0.1, "lines"),
+    #strip.text.x = element_text(size = 8)
+  )
+
+
+
+
+unigme_district <- read_xlsx('UN-IGME-2023-Subnational-U5MR-and-NMR-database.xlsx',3)
+
+unigme_district_processed <- unigme_district |>
+  filter(Indicator == 'Under-five mortality rate') |>
+  rename(country = "Country.Name",survey_name='Series.Name', year='Series.Year', 
+         district = 'Area.Name', reference_date = 'Reference.Date', u5mr = 'Estimates', 
+         standard_error = 'Standard.Error.of.Estimates') |> 
+  select(country, district, survey_name, year, reference_date, u5mr, standard_error) |> 
+  group_by(country, district) |> 
+  slice_max(n= 1,order_by=tibble(year,reference_date))
+
+
+# TO - DO: poprawić/ dodać nowe wykresy, dla unigme_district mozna próbować skorzystać z http://www.gadm.org/ 
+# aby miec mapę z podziałem na dystrykty
+
+
+
+
+
+
+
+
+
+
+
