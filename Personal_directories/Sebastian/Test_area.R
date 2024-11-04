@@ -125,7 +125,8 @@ worldplot <-  x |>
   ggplot(mapping = aes(x = long, y = lat, group = group)) +
   coord_fixed(1.3)+
   geom_polygon(aes(fill = u5mr)) +
-  scale_fill_distiller(palette ="RdBu", direction = -1)
+  scale_fill_distiller(palette ="RdBu", direction = -1) +
+  labs(fill = "Under 5 mortality rate")
 
 worldplot
 
@@ -134,7 +135,7 @@ x |> filter(is.finite(u5mr) == FALSE) |> group_by(region, u5mr) |> summarise() |
 left_join(world) |>
   ggplot(mapping = aes(x = long, y = lat, group = group)) +
   coord_fixed(1.3) +
-  geom_polygon(aes(fill = c(1)))
+  geom_polygon(aes(fill = c(1))) +
   
 x |> filter(is.finite(u5mr) == FALSE) |> group_by(region) |> summarise() |>
 View()
