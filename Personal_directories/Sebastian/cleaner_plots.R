@@ -63,7 +63,7 @@ country_name_replacements <- matrix(
 #   labs(fill = "Under 5 mortality rate")
 # 
 
-un_wpp |> 
+map_plot <- un_wpp |> 
   mutate(Location = fix_names(Location, country_name_replacements)) |>
   filter(Location %in% world$region, Time %in% c("1950", "2023"))|>
   select(region = Location, u5mr=Q5, year=Time)|>
@@ -81,10 +81,24 @@ un_wpp |>
   # scale_fill_distiller(palette = "YlOrBr", direction = 1) +
   # scale_fill_distiller(palette = "YlOrRd", direction = 1) +
   labs(fill = "Under 5 mortality rate") +
-  facet_wrap(~year)
-  # theme(panel.background = element_rect(fill = "#cccccc"),
-  #       panel.grid.major = element_line(colour = "grey"),
-  #       panel.grid.minor = element_line(colour = "grey"))
+  facet_wrap(~year, ncol = 1) +
+  labs( x = NULL,
+        y = NULL) +
+  theme_void() +
+  theme(
+    strip.text = element_text(size = 14,
+                              face = "bold")
+  )
+
+map_plot
+
+ggsave("mapa_porownawcza_1950_2023_u5mr.png",
+       map_plot,
+       height = 1656,
+       width = 2880,
+       units = "px",
+       bg = "transparent")
+
 # 
 # x <- un_wpp |>
 #   filter(Time == 1950) |>
@@ -106,7 +120,8 @@ unigme_wealth_processed <- unigme_wealth |>
          year = Series.Year,
          reference_date = Reference.Date,
          wealth_quintile = Wealth.Quintile,
-         u5mr = Estimates)
+         u5mr = Estimates) |>
+  mutate(wealth_quintile = factor(wealth_quintile))
 
 uw_dem <- unigme_wealth_processed |> 
   filter(survey_name == 'Demographic and Health Survey') |> 
@@ -115,8 +130,29 @@ uw_dem <- unigme_wealth_processed |>
 
 
 # Moim zdaniem ten wykres ma lepsze dane
-ggplot(uw_dem, aes(factor(wealth_quintile), u5mr)) + # tylko Afryka: |> filter(country %in% am_countries$Country_ISO)
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) 
+violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr,
+                   colour = wealth_quintile,
+                   fill = wealth_quintile)) + # tylko Afryka: |> filter(country %in% am_countries$Country_ISO)
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  scale_colour_brewer(palette = "Set1") +
+  labs(y = "Deaths/1000 births",
+       x = "Wealth quantile") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        rect = element_rect(fill = "transparent"),
+        panel.grid = element_line(colour = "black"))
+
+ggsave("violin_wealth_u5mr.png",
+       violin_wealth,
+       height = 1656,
+       width = 2880,
+       units = "px",
+       bg = "transparent")
+    # geom_dotplot(binwidth = "y",
+  #              stackdir = "center",
+  #              dotsize = 1)
+  # stat_summary()
 
 
   
