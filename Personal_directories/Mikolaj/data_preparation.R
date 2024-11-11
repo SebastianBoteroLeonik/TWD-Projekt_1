@@ -109,7 +109,7 @@ causes_death_processed <- causes_death |>
     #Cause.of.death == 'Tetanus' ~ 'Bacterial disease (Tetanus)',
     Cause.of.death %in% c('HIV/AIDS', 'Measles') ~ 'Viral diseases (HIV/AIDS, Measles)',
     Cause.of.death %in% c('Lower respiratory infections', 'Tuberculosis') ~ 'Respiratory diseases (Lower
-  respiratory infections, Tuberculosis)',
+respiratory infections, Tuberculosis)',
     .default = Cause.of.death), country = case_when(country == "Central African Republic" ~ 'CAR',
                                                     country == 'Venezuela (Bolivarian Republic of)' ~ 'Venezuela',
                                                     .default = country)) |>
@@ -121,22 +121,42 @@ temp <- causes_death_processed |>
 
 causes_death_processed <- left_join(causes_death_processed, temp) |> arrange(desc(sum_mortality))
 
-ggplot(causes_death_processed |> 
+stacked_barplot <- ggplot(causes_death_processed |> 
          filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
                                "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), #Benin, Japan, Guinea, UAE
         # filter(country %in% am_countries$Country_ISO) |> 
         # slice(1:(14*5)) , 
        aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
-  geom_bar(position = 'fill', stat="identity", width = 0.65) +
-  scale_fill_manual(values = c("dodgerblue2", "#E31A1C", 
+  geom_bar(position = 'fill', stat="identity", width = 0.5) +
+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
                                "black",
-                               "#6A3D9A", 
+                               "#6A3D9A",
                                "skyblue2",
                                "#FF7F00", "green4",
-                               "deeppink1", "palegreen2", 
+                               "deeppink1", "palegreen2",
                                "yellow3")) +
+
   scale_x_continuous(expand = c(0.02,0)) +
-  theme(legend.text = element_text(size=7))
+  theme_minimal() +
+  theme(legend.text = element_text(size=7),
+        rect = element_rect(fill = "transparent"),
+        panel.grid = element_line(colour = "black")
+        ) +
+  labs(
+    x = "Death cause fractions",
+    y = "Country",
+    fill = "Death cause"
+  ) 
+
+stacked_barplot
+
+ggsave("../Sebastian/bar_plot_choroby.png",
+       stacked_barplot,
+       height = 1656,
+       width = 2880,
+       units = "px",
+       bg = "transparent")
 
 # TO - DO: poprawić wykresy na bardziej zjadliwe i skorzystać z danych dla subregions i sex-specific
 
@@ -153,23 +173,44 @@ unigme_by_sex_processed <- unigme_by_sex |>
 unigme_by_sex_processed$continent = countrycode(sourcevar = as.data.frame(unigme_by_sex_processed)[, "country"],
                                                 origin = "country.name",
                                                 destination = "continent")
-
-ggplot(unigme_by_sex_processed |>
-         filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
-         group_by(country) |> 
-         slice_max(n= 1,order_by=tibble(year,reference_date)),
-       aes(x = as.numeric(u5mr), y = continent, fill = continent)) +
-  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE, quantiles = 4) +
-  facet_wrap(~sex) +
+sex_ridgelines <- unigme_by_sex_processed |>
+  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
+  group_by(country) |> 
+  slice_max(n= 1,order_by=tibble(year,reference_date)) |>
+  arrange(desc(sex)) |>
+  ggplot(aes(x = as.numeric(u5mr), y = continent, fill = fct_inorder(sex))) +
+  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE, quantiles = 2) +
+  # facet_wrap(~sex) +
   scale_x_sqrt() +
+  scale_fill_manual(values = c(
+    "#0044dd",
+    # "lightblue"
+    # "#44bbff", 
+    "#FF99bb"
+  )) +
   theme_ridges() +
+  # theme_minimal() +
   theme(
-    legend.position="none"
-    #panel.spacing = unit(0.1, "lines"),
-    #strip.text.x = element_text(size = 8)
+        rect = element_rect(fill = "transparent"),
+        panel.grid = element_line(colour = "#555555"),
+        # panel.grid.minor = element_line(colour = "black"),
+        panel.grid.major = element_line(colour = "#555555")
+  ) +
+  labs(
+    x = "Under 5 moratality rate (Deaths/1000 births)",
+    y = NULL,
+    fill = "Sex"
   )
 
+sex_ridgelines
 
+
+ggsave("../Sebastian/ridgeline_plec_u5mr.png",
+       sex_ridgelines,
+       height = 1656,
+       width = 2880,
+       units = "px",
+       bg = "transparent")
 
 
 unigme_district <- read_xlsx('UN-IGME-2023-Subnational-U5MR-and-NMR-database.xlsx',3)
