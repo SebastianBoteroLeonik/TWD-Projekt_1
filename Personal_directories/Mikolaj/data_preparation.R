@@ -25,31 +25,31 @@ un_wpp_1950 <- un_wpp |>
 
 
 
-unigme_total <- read_xlsx('UNIGME-2023-Total-U5MR-IMR-and-NMR-database.xlsx',3)
-
-unigme_total_processed <- unigme_total |>
-  rename(country = "Total under-five mortality rate (deaths per 1,000 live births)",survey_name='...3', year='...4',
-         reference_date = '...13', u5mr = '...14', standard_error = '...15') |> 
-  select(country, survey_name, year, reference_date, u5mr, standard_error) |> 
-  slice(-(1:2)) 
-
-#Multiple Indicator Cluster Survey - 85 unikalne wystapienia
-ut_mul <- unigme_total_processed |> 
-  filter(survey_name == 'Multiple Indicator Cluster Survey') |> group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date))
-
-#Demographic and Health Survey - 93 unikalne wystapienia
-ut_dem <- unigme_total_processed |> 
-  filter(survey_name == 'Demographic and Health Survey') |> 
-  group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date))
-
-
-#VR Submitted to WHO/UNIGME 2023 version - 129 wystąpień
-ut_vr <- unigme_total_processed |> 
-  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version') |> 
-  group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date))
+# unigme_total <- read_xlsx('UNIGME-2023-Total-U5MR-IMR-and-NMR-database.xlsx',3)
+# 
+# unigme_total_processed <- unigme_total |>
+#   rename(country = "Total under-five mortality rate (deaths per 1,000 live births)",survey_name='...3', year='...4',
+#          reference_date = '...13', u5mr = '...14', standard_error = '...15') |> 
+#   select(country, survey_name, year, reference_date, u5mr, standard_error) |> 
+#   slice(-(1:2)) 
+# 
+# #Multiple Indicator Cluster Survey - 85 unikalne wystapienia
+# ut_mul <- unigme_total_processed |> 
+#   filter(survey_name == 'Multiple Indicator Cluster Survey') |> group_by(country) |> 
+#   slice_max(n= 1,order_by=tibble(year,reference_date))
+# 
+# #Demographic and Health Survey - 93 unikalne wystapienia
+# ut_dem <- unigme_total_processed |> 
+#   filter(survey_name == 'Demographic and Health Survey') |> 
+#   group_by(country) |> 
+#   slice_max(n= 1,order_by=tibble(year,reference_date))
+# 
+# 
+# #VR Submitted to WHO/UNIGME 2023 version - 129 wystąpień
+# ut_vr <- unigme_total_processed |> 
+#   filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version') |> 
+#   group_by(country) |> 
+#   slice_max(n= 1,order_by=tibble(year,reference_date))
 
 # TO - DO: narysować mapy świata dla x, a i b z wypisanym u5mr dla każdego kraju, a potem wybrac która lepsza
 #          potem to samo dla y, żeby pokazać postęp na świecie
@@ -75,26 +75,70 @@ unigme_wealth_processed <- unigme_wealth |>
   mutate(u5mr = as.numeric(u5mr))
 
 #Multiple Indicator Cluster Survey
-uw_mul <- unigme_wealth_processed |>
-  filter(survey_name == 'Multiple Indicator Cluster Survey') |> 
-  group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date)) #|> mutate(u5mr = round(u5mr,2))
+# uw_mul <- unigme_wealth_processed |>
+#   filter(survey_name == 'Multiple Indicator Cluster Survey') |> 
+#   group_by(country) |> 
+#   slice_max(n= 1,order_by=tibble(year,reference_date)) #|> mutate(u5mr = round(u5mr,2))
 
 
 #Demographic and Health Survey
 uw_dem <- unigme_wealth_processed |> 
   filter(survey_name == 'Demographic and Health Survey') |> 
   group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date))
+  slice_max(n= 1,order_by=tibble(year,reference_date)) |>
+  mutate(wealth_quintile = case_when(
+    wealth_group == 1 ~ 'Poorest\n(0%-20%)',
+    wealth_group == 2 ~ 'Poorer\n(20%-40%)',
+    wealth_group == 3 ~ 'Middle\n(40%-60%)',
+    wealth_group == 4 ~ 'Wealthier\n(60%-80%)',
+    wealth_group == 5 ~ 'Wealthiest\n(80%-100%)'))
+
+# uw_dem_medians <- uw_dem |>
+#   group_by(wealth_quintile) |>
+#   summarise(avg = median(u5mr)) |>
+#   ungroup()
 
 #VR Submitted to WHO/UNIGME 2023 version - nie istnieje dla unigme_wealth
 
-ggplot(uw_mul, aes(wealth_group, u5mr)) +
-  geom_boxplot() # dodanie + ylim(0,100) zmienia wartości (np wartość mediany dla 1) na wykresie - dziwne, nwm czemu
+# ggplot(uw_mul, aes(wealth_group, u5mr)) +
+#   geom_boxplot() # dodanie + ylim(0,100) zmienia wartości (np wartość mediany dla 1) na wykresie - dziwne, nwm czemu
 
 # Moim zdaniem ten wykres ma lepsze dane
-ggplot(uw_dem, aes(wealth_group, u5mr)) + # tylko Afryka: |> filter(country %in% am_countries$Country_ISO)
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) 
+
+violin_wealth <- ggplot(uw_dem, aes(fct_inorder(wealth_quintile), u5mr, colour = fct_inorder(wealth_quintile), 
+                                    fill = fct_inorder(wealth_quintile))) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  # geom_point(data = uw_dem_medians,         # nie działa dobrze, bo violin plot przcina outliery i wychodzi inna wartosc mediany
+  #            mapping = aes(x = wealth_quintile, y = avg),
+  #            color="black", lwd = 2) +
+  # geom_line(data = uw_dem_medians, 
+  #           mapping = aes(x = wealth_quintile, y = avg, group = 1), color = 'red', lwd = 1.5) +
+  scale_fill_brewer(palette = "Pastel1") +
+  scale_colour_brewer(palette = "Set1") +
+  labs(y = "Under 5 mortality rate (Deaths/1000 births)",
+       x = "Wealth quintile") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text=element_text(size=7),
+        axis.title=element_text(size=7),
+        rect = element_rect(fill = "transparent"),
+        panel.grid = element_line(colour = "black"))
+
+violin_wealth
+
+ggsave("violin_wealth_u5mr.png",
+       violin_wealth,
+       height = 1656*1/2,
+       width = 2880*1/2,
+       units = "px",
+       bg = "transparent")
+
+
+
+
+
+# ggplot(uw_dem, aes(wealth_group, u5mr)) + # tylko Afryka: |> filter(country %in% am_countries$Country_ISO)
+#   geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) 
 
 
 
@@ -122,13 +166,13 @@ temp <- causes_death_processed |>
 causes_death_processed <- left_join(causes_death_processed, temp) |> arrange(desc(sum_mortality))
 
 stacked_barplot <- ggplot(causes_death_processed |> 
-         filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
-                               "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), #Benin, Japan, Guinea, UAE
-        # filter(country %in% am_countries$Country_ISO) |> 
-        # slice(1:(14*5)) , 
-       aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
-  geom_bar(position = 'fill', stat="identity", width = 0.5) +
-
+                            filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
+                                                  "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), #Benin, Japan, Guinea, UAE
+                          # filter(country %in% am_countries$Country_ISO) |> 
+                          # slice(1:(14*5)) , 
+                          aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
+  geom_bar(position = 'fill', stat="identity", width = 0.3) +
+  
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
                                "black",
                                "#6A3D9A",
@@ -136,14 +180,22 @@ stacked_barplot <- ggplot(causes_death_processed |>
                                "#FF7F00", "green4",
                                "deeppink1", "palegreen2",
                                "yellow3")) +
-
-  scale_x_continuous(expand = c(0.02,0)) +
+  
+  scale_x_continuous(expand = c(0.005,0)) +
   theme_minimal() +
-  theme(legend.text = element_text(size=7),
+  theme(legend.text = element_text(size=5),
+        legend.title = element_text(size=7),
+        legend.key.size = unit(0.2, 'cm'),
+        legend.position = "bottom",
+        axis.text=element_text(size=7),
+        axis.title=element_text(size=7),
         rect = element_rect(fill = "transparent"),
-        panel.grid = element_line(colour = "black")
-        ) +
+        panel.grid = element_line(colour = "black"),
+        aspect.ratio = 1/5,
+        plot.title = element_text(hjust = 0.5, size = 8, face = 'bold')
+  ) +
   labs(
+    #title = "Death causes in different countries",
     x = "Death cause fractions",
     y = "Country",
     fill = "Death cause"
@@ -151,12 +203,30 @@ stacked_barplot <- ggplot(causes_death_processed |>
 
 stacked_barplot
 
-ggsave("../Sebastian/bar_plot_choroby.png",
+ggsave("bar_plot_choroby.png",
        stacked_barplot,
-       height = 1656,
-       width = 2880,
+       height = 1656*3/4,
+       width = 2880*3/4,
        units = "px",
        bg = "transparent")
+
+
+# ggplot(causes_death_processed |> 
+#          filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
+#                                "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), #Benin, Japan, Guinea, UAE
+#        # filter(country %in% am_countries$Country_ISO) |> 
+#        # slice(1:(14*5)) , 
+#        aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
+#   geom_bar(position = 'fill', stat="identity", width = 0.65) +
+#   scale_fill_manual(values = c("dodgerblue2", "#E31A1C", 
+#                                "black",
+#                                "#6A3D9A", 
+#                                "skyblue2",
+#                                "#FF7F00", "green4",
+#                                "deeppink1", "palegreen2", 
+#                                "yellow3")) +
+#   scale_x_continuous(expand = c(0.02,0)) +
+#   theme(legend.text = element_text(size=7))
 
 # TO - DO: poprawić wykresy na bardziej zjadliwe i skorzystać z danych dla subregions i sex-specific
 
@@ -173,6 +243,7 @@ unigme_by_sex_processed <- unigme_by_sex |>
 unigme_by_sex_processed$continent = countrycode(sourcevar = as.data.frame(unigme_by_sex_processed)[, "country"],
                                                 origin = "country.name",
                                                 destination = "continent")
+
 sex_ridgelines <- unigme_by_sex_processed |>
   filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
   group_by(country) |> 
@@ -191,13 +262,20 @@ sex_ridgelines <- unigme_by_sex_processed |>
   theme_ridges() +
   # theme_minimal() +
   theme(
-        rect = element_rect(fill = "transparent"),
-        panel.grid = element_line(colour = "#555555"),
-        # panel.grid.minor = element_line(colour = "black"),
-        panel.grid.major = element_line(colour = "#555555")
+    legend.position = c(0.77, 0.8),
+    legend.text = element_text(size=4),
+    legend.title = element_text(size=6),
+    legend.key.size = unit(0.2, 'cm'),
+    axis.text = element_text(size=5),
+    axis.title.y = element_text(size=7),
+    axis.title.x = element_text(size=8, face = 'bold'),
+    rect = element_rect(fill = "transparent"),
+    panel.grid = element_line(colour = "#555555"),
+    # panel.grid.minor = element_line(colour = "black"),
+    panel.grid.major = element_line(colour = "#555555")
   ) +
   labs(
-    x = "Under 5 moratality rate (Deaths/1000 births)",
+    x = "Under 5 mortality rate (Deaths/1000 births) - sqrt scale",
     y = NULL,
     fill = "Sex"
   )
@@ -205,12 +283,29 @@ sex_ridgelines <- unigme_by_sex_processed |>
 sex_ridgelines
 
 
-ggsave("../Sebastian/ridgeline_plec_u5mr.png",
+ggsave("ridgeline_plec_u5mr.png",
        sex_ridgelines,
-       height = 1656,
-       width = 2880,
+       height = 1656*2/4,
+       width = 2880*2/4,
        units = "px",
        bg = "transparent")
+
+# ggplot(unigme_by_sex_processed |>
+#          filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
+#          group_by(country) |> 
+#          slice_max(n= 1,order_by=tibble(year,reference_date)),
+#        aes(x = as.numeric(u5mr), y = continent, fill = continent)) +
+#   stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE, quantiles = 4) +
+#   facet_wrap(~sex) +
+#   scale_x_sqrt() +
+#   theme_ridges() +
+#   theme(
+#     legend.position="none"
+#     #panel.spacing = unit(0.1, "lines"),
+#     #strip.text.x = element_text(size = 8)
+#   )
+
+
 
 
 unigme_district <- read_xlsx('UN-IGME-2023-Subnational-U5MR-and-NMR-database.xlsx',3)
@@ -252,82 +347,76 @@ unigme_district_processed <- unigme_district |>
 
 
 #NIE CZYTAĆ
-# world <- map_data("world")
-# 
-# fix_names <- function(x, replacements){
-#   for (i in 1:nrow(replacements)) {
-#     x <- replace(x, x == replacements[i, 1], replacements[i, 2])
-#   }
-#   x
-# }
-# 
-# country_name_replacements <- matrix(
-#   c( "United States of America (and dependencies)", "USA",
-#      "Russian Federation", "Russia",
-#      "Iran (Islamic Republic of)", "Iran",
-#      "United Kingdom", "UK",
-#      "Czechia", "Czech Republic",
-#      "Venezuela (Bolivarian Republic of)", "Venezuela",
-#      "Bolivia (Plurinational State of)", "Bolivia",
-#      "Türkiye", "Turkey",
-#      "Syrian Arab Republic", "Syria",
-#      "Kosovo (under UNSC res. 1244)", "Kosovo",
-#      "Republic of Moldova", "Moldova",
-#      "Dem. People's Republic of Korea", "North Korea",
-#      "Republic of Korea", "South Korea",
-#      "Viet Nam", "Vietnam",
-#      "Lao People's Democratic Republic", "Laos",
-#      "Côte d'Ivoire", "Ivory Coast",
-#      "Congo", "Republic of Congo",
-#      "United Republic of Tanzania", "Tanzania",
-#      "China, Taiwan Province of China", "Taiwan",
-#      "Eswatini", "Swaziland",
-#      "State of Palestine", "Palestine"), ncol = 2, byrow = TRUE)
-# 
-# un_wpp |> 
-#   mutate(Location = fix_names(Location, country_name_replacements)) |>
-#   filter(Location %in% world$region, Time == '1950')|>
-#   select(region = Location, u5mr=Q5)|>
-#   right_join(world) |>
-#   ggplot(mapping = aes(x = long, y = lat, group = group)) +
-#   coord_fixed(1.3)+
-#   geom_polygon(aes(fill = u5mr)) +
-#   scale_fill_distiller(palette ="RdBu", direction = -1) +
-#   labs(fill = "Under 5 mortality rate")
-# 
-# un_wpp |> 
-#   mutate(Location = fix_names(Location, country_name_replacements)) |>
-#   filter(Location %in% world$region, Time == '2023')|>
-#   select(region = Location, u5mr=Q5)|>
-#   right_join(world) |>
-#   ggplot(mapping = aes(x = long, y = lat, group = group)) +
-#   coord_fixed(1.3)+
-#   geom_polygon(aes(fill = u5mr)) +
-#   scale_fill_distiller(palette ="RdBu", direction = -1) +
-#   labs(fill = "Under 5 mortality rate")
-# 
-# 
-# un_wpp |> 
-#   mutate(Location = fix_names(Location, country_name_replacements)) |>
-#   filter(Location %in% world$region, Time %in% c("1950", "2023"))|>
-#   select(region = Location, u5mr=Q5, year=Time)|>
-#   left_join(world) |>
-#   ggplot(aes(x = long, y = lat, group = group)) +
-#   coord_fixed(1.3) +
-#   # coord_map() +
-#   geom_polygon(aes(fill = u5mr), colour = "#333333", size = 0.2) +
-#   # scale_fill_distiller(palette = "Reds", direction = 1) +
-#   scale_fill_gradient2(low = "#ccffdd",
-#                        mid = "#ccaa44",
-#                        high = "#bb0000",
-#                        midpoint = 250) +
-#   # scale_fill_distiller(palette = "YlOrBr", direction = 1) +
-#   # scale_fill_distiller(palette = "YlOrRd", direction = 1) +
-#   labs(fill = "Under 5 mortality rate") +
-#   facet_wrap(~year)
-# # theme(panel.background = element_rect(fill = "#cccccc"),
-# #       panel.grid.major = element_line(colour = "grey"),
-# #       panel.grid.minor = element_line(colour = "grey"))
+world <- map_data("world")
+
+fix_names <- function(x, replacements){
+  for (i in 1:nrow(replacements)) {
+    x <- replace(x, x == replacements[i, 1], replacements[i, 2])
+  }
+  x
+}
+
+country_name_replacements <- matrix(
+  c( "United States of America (and dependencies)", "USA",
+     "Russian Federation", "Russia",
+     "Iran (Islamic Republic of)", "Iran",
+     "United Kingdom", "UK",
+     "Czechia", "Czech Republic",
+     "Venezuela (Bolivarian Republic of)", "Venezuela",
+     "Bolivia (Plurinational State of)", "Bolivia",
+     "Türkiye", "Turkey",
+     "Syrian Arab Republic", "Syria",
+     "Kosovo (under UNSC res. 1244)", "Kosovo",
+     "Republic of Moldova", "Moldova",
+     "Dem. People's Republic of Korea", "North Korea",
+     "Republic of Korea", "South Korea",
+     "Viet Nam", "Vietnam",
+     "Lao People's Democratic Republic", "Laos",
+     "Côte d'Ivoire", "Ivory Coast",
+     "Congo", "Republic of Congo",
+     "United Republic of Tanzania", "Tanzania",
+     "China, Taiwan Province of China", "Taiwan",
+     "Eswatini", "Swaziland",
+     "State of Palestine", "Palestine"), ncol = 2, byrow = TRUE)
+
+map_plot <- un_wpp |> 
+  mutate(Location = fix_names(Location, country_name_replacements)) |>
+  filter(Location %in% world$region, Time %in% c("1950", "2023"))|>
+  select(region = Location, u5mr=Q5, year=Time)|>
+  left_join(world) |>
+  ggplot(aes(x = long, y = lat, group = group)) +
+  coord_fixed(1.3) +
+  # coord_map() +
+  geom_polygon(aes(fill = u5mr), colour = "#333333", size = 0.2) +
+  # scale_fill_distiller(palette = "PuBuGn", direction = 1) +
+  # scale_fill_distiller(palette = "Reds", direction = 1) +
+  scale_fill_gradient2(low = "#ccffdd",
+                       mid = "#ccaa44",
+                       high = "#bb0000",
+                       midpoint = 250) +
+  # scale_fill_distiller(palette = "YlOrBr", direction = 1) +
+  # scale_fill_distiller(palette = "YlOrRd", direction = 1) +
+  labs(fill = "Under 5\nmortality rate") +
+  facet_wrap(~year, ncol = 1) +
+  labs( x = NULL,
+        y = NULL) +
+  theme_void() +
+  theme(
+    legend.text = element_text(size=5),
+    legend.title = element_text(size=7),
+    legend.key.size = unit(0.4, 'cm'),
+    legend.position = c(0.18, 0.6),
+    strip.text = element_text(size = 14, face = "bold")
+  )
+
+map_plot
+
+ggsave("mapa_porownawcza_1950_2023_u5mr.png",
+       map_plot,
+       height = 1656*3/4,
+       width = 2880*3/4,
+       units = "px",
+       bg = "transparent")
 # 
 # 
 # 
