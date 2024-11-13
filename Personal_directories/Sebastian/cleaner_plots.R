@@ -156,18 +156,28 @@ uw_dem <- unigme_wealth_processed |>
 
 
 # Moim zdaniem ten wykres ma lepsze dane
-violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr,
-                   colour = wealth_quintile,
-                   fill = wealth_quintile)) + # tylko Afryka: |> filter(country %in% am_countries$Country_ISO)
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
-  scale_fill_brewer(palette = "Pastel1") +
-  scale_colour_brewer(palette = "Set1") +
-  labs(y = "Deaths/1000 births",
+violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75),
+                   colour = "#101044",
+                   fill = "#338df3") +
+  labs(y = "Deaths in children under 5 per 1000 births",
        x = "Wealth quantile") +
+  scale_x_discrete(labels = c(
+    'Poorest\n(0%-20%)',
+    'Poorer\n(20%-40%)',
+    'Middle\n(40%-60%)',
+    'Wealthier\n(60%-80%)',
+    'Wealthiest\n(80%-100%)'
+  )) +
   theme_minimal() +
   theme(legend.position = "none",
         rect = element_rect(fill = "transparent"),
+        axis.text.x = element_text(face = "bold"),
         panel.grid = element_line(colour = "black"))
+
+
+violin_wealth
+
 
 ggsave("violin_wealth_u5mr.png",
        violin_wealth,
