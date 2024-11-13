@@ -5,7 +5,7 @@ library(ggplot2)
 library(africamonitor) # potrzebne aby wybrać same kraje afrykańskie
 
 
-un_wpp <- read.csv("WPP2024_Demographic_Indicators_Medium.csv")
+un_wpp <- read.csv("WPP2024_Demographic_Indicators_Medium.csv.gz")
 # Q5 - U5MR
 # 2023
 un_wpp_2023 <- un_wpp |> 
@@ -202,3 +202,4 @@ ggplot(causes_death_processed_mod2, aes(x = continent, y = of100, fill = Cause.o
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Etykiety osi X pod kątem 45 stopni
   scale_fill_viridis_d(option = "plasma")  # Kolory Viridis dla przyczyn śmierci
+

@@ -72,7 +72,7 @@ unigme_wealth_processed <- unigme_wealth |>
   rename(country = "Total under-five mortality rate by wealth quintile (deaths per 1,000 live births)", survey_name='...3',
          year='...4', reference_date = '...13', wealth_group = '...14', u5mr = '...15', standard_error = '...16') |> 
   select(country, survey_name, year, reference_date, wealth_group, u5mr, standard_error) |> slice(-(1:2)) |>
-  mutate(u5mr = as.numeric(u5mr))
+  mutate(u5mr = as.numeric(u5mr), wealth_quintile = factor(wealth_group))
 
 #Multiple Indicator Cluster Survey
 # uw_mul <- unigme_wealth_processed |>
@@ -85,13 +85,13 @@ unigme_wealth_processed <- unigme_wealth |>
 uw_dem <- unigme_wealth_processed |> 
   filter(survey_name == 'Demographic and Health Survey') |> 
   group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date)) |>
-  mutate(wealth_quintile = case_when(
-    wealth_group == 1 ~ 'Poorest\n(0%-20%)',
-    wealth_group == 2 ~ 'Poorer\n(20%-40%)',
-    wealth_group == 3 ~ 'Middle\n(40%-60%)',
-    wealth_group == 4 ~ 'Wealthier\n(60%-80%)',
-    wealth_group == 5 ~ 'Wealthiest\n(80%-100%)'))
+  slice_max(n= 1,order_by=tibble(year,reference_date)) 
+  # mutate(wealth_quintile = case_when(
+  #   wealth_group == 1 ~ 'Poorest\n(0%-20%)',
+  #   wealth_group == 2 ~ 'Poorer\n(20%-40%)',
+  #   wealth_group == 3 ~ 'Middle\n(40%-60%)',
+  #   wealth_group == 4 ~ 'Wealthier\n(60%-80%)',
+  #   wealth_group == 5 ~ 'Wealthiest\n(80%-100%)'))
 
 # uw_dem_medians <- uw_dem |>
 #   group_by(wealth_quintile) |>
@@ -105,22 +105,31 @@ uw_dem <- unigme_wealth_processed |>
 
 # Moim zdaniem ten wykres ma lepsze dane
 
-violin_wealth <- ggplot(uw_dem, aes(fct_inorder(wealth_quintile), u5mr, colour = fct_inorder(wealth_quintile), 
-                                    fill = fct_inorder(wealth_quintile))) + 
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75),
+              colour = "#101044",
+              fill = "#338df3") +
   # geom_point(data = uw_dem_medians,         # nie działa dobrze, bo violin plot przcina outliery i wychodzi inna wartosc mediany
   #            mapping = aes(x = wealth_quintile, y = avg),
   #            color="black", lwd = 2) +
   # geom_line(data = uw_dem_medians, 
   #           mapping = aes(x = wealth_quintile, y = avg, group = 1), color = 'red', lwd = 1.5) +
-  scale_fill_brewer(palette = "Pastel1") +
-  scale_colour_brewer(palette = "Set1") +
+  # scale_fill_brewer(palette = "Pastel1") +
+  # scale_colour_brewer(palette = "Set1") +
   labs(y = "Under 5 mortality rate (Deaths/1000 births)",
        x = "Wealth quintile") +
+  scale_x_discrete(labels = c(
+    'Poorest\n(0%-20%)',
+    'Poorer\n(20%-40%)',
+    'Middle\n(40%-60%)',
+    'Wealthier\n(60%-80%)',
+    'Wealthiest\n(80%-100%)'
+  )) +
   theme_minimal() +
   theme(legend.position = "none",
-        axis.text=element_text(size=7),
-        axis.title=element_text(size=7),
+        # axis.text=element_text(size=7),
+        # axis.title=element_text(size=7),
+        axis.text.x = element_text(face = "bold"),
         rect = element_rect(fill = "transparent"),
         panel.grid = element_line(colour = "black"))
 
@@ -128,8 +137,8 @@ violin_wealth
 
 ggsave("violin_wealth_u5mr.png",
        violin_wealth,
-       height = 1656*1/2,
-       width = 2880*1/2,
+       height = 1656,
+       width = 2880,
        units = "px",
        bg = "transparent")
 
@@ -163,30 +172,25 @@ temp <- causes_death_processed |>
   group_by(country) |>
   summarise(sum_mortality = sum(mortality))
 
-causes_death_processed <- left_join(causes_death_processed, temp) |>
-  arrange(desc(sum_mortality))
+causes_death_processed <- left_join(causes_death_processed, temp) |> arrange(desc(sum_mortality))
 
-
-stacked_barplot <-  causes_death_processed |>
-  group_by(country, death_cause_type, sum_mortality) |>
-  summarise(mortality = sum(mortality)) |>
-  filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
-                        "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")) |>
-  #Benin, Japan, Guinea, UAE
-  # filter(country %in% am_countries$Country_ISO) |> 
-  # slice(1:(14*5)) , 
-  ggplot(aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
-  geom_bar(position = 'fill', stat="identity", width = 0.3,
-           colour = "black",
-           linewidth = 0.1) +
-  # scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
-  #                              "black",
-  #                              "#6A3D9A",
-  #                              "skyblue2",
-  #                              "#FF7F00", "green4",
-  #                              "deeppink1", "palegreen2",
-  #                              "yellow3")) +
-  scale_fill_brewer(palette = "Set3") +
+stacked_barplot <- ggplot(causes_death_processed |> 
+                            filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
+                                                  "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), 
+                          #Benin, Japan, Guinea, UAE
+                          # filter(country %in% am_countries$Country_ISO) |> 
+                          # slice(1:(14*5)) , 
+                          aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
+  geom_bar(position = 'fill', stat="identity", width = 0.3) +
+  
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
+                               "black",
+                               "#6A3D9A",
+                               "skyblue2",
+                               "#FF7F00", "green4",
+                               "deeppink1", "palegreen2",
+                               "yellow3")) +
+  #scale_fill_brewer(palette = "Set3") +
   scale_x_continuous(expand = c(0.005,0)) +
   theme_minimal() +
   theme(legend.text = element_text(size=5),
@@ -212,8 +216,8 @@ stacked_barplot
 
 ggsave("bar_plot_choroby.png",
        stacked_barplot,
-       height = 1656*3/4,
-       width = 2880*3/4,
+       height = 1656,
+       width = 2880,
        units = "px",
        bg = "transparent")
 
@@ -292,8 +296,8 @@ sex_ridgelines
 
 ggsave("ridgeline_plec_u5mr.png",
        sex_ridgelines,
-       height = 1656*2/4,
-       width = 2880*2/4,
+       height = 1656,
+       width = 2880,
        units = "px",
        bg = "transparent")
 
@@ -356,6 +360,20 @@ unigme_district_processed <- unigme_district |>
 #NIE CZYTAĆ
 world <- map_data("world")
 
+world <- world |>
+  filter(
+    !(long < -130 & lat > -90 & lat < 50),
+    !(long > 130 & lat > 0 & lat < 30),
+    region != "Antarctica",
+    region != "Fiji",
+    region != "Kiribati",
+    region != "Mauritius",
+    region != "Faroe Islands",
+    region != "Comoros",
+    region != "Mayotte",
+    !(region == "Ecuador" & !is.na(subregion))
+  )
+
 fix_names <- function(x, replacements){
   for (i in 1:nrow(replacements)) {
     x <- replace(x, x == replacements[i, 1], replacements[i, 2])
@@ -386,6 +404,8 @@ country_name_replacements <- matrix(
      "Eswatini", "Swaziland",
      "State of Palestine", "Palestine"), ncol = 2, byrow = TRUE)
 
+
+
 map_plot <- un_wpp |> 
   mutate(Location = fix_names(Location, country_name_replacements)) |>
   filter(Location %in% world$region, Time %in% c("1950", "2023"))|>
@@ -397,13 +417,17 @@ map_plot <- un_wpp |>
   geom_polygon(aes(fill = u5mr), colour = "#333333", size = 0.2) +
   # scale_fill_distiller(palette = "PuBuGn", direction = 1) +
   # scale_fill_distiller(palette = "Reds", direction = 1) +
-  scale_fill_gradient2(low = "#ccffdd",
-                       mid = "#ccaa44",
-                       high = "#bb0000",
-                       midpoint = 250) +
+  scale_fill_gradient2(low = "#44ff99",
+                       mid = "#eeaa33",
+                       high = "#ff0000",
+                       midpoint = 240) +
+  # scale_fill_gradient2(low = "#ccffdd",
+  #                      mid = "#ccaa44",
+  #                      high = "#bb0000",
+  #                      midpoint = 250) +
   # scale_fill_distiller(palette = "YlOrBr", direction = 1) +
   # scale_fill_distiller(palette = "YlOrRd", direction = 1) +
-  labs(fill = "Under 5\nmortality rate") +
+  labs(fill = "Under 5 mortality rate") +
   facet_wrap(~year, ncol = 1) +
   labs( x = NULL,
         y = NULL) +
@@ -412,16 +436,18 @@ map_plot <- un_wpp |>
     legend.text = element_text(size=5),
     legend.title = element_text(size=7),
     legend.key.size = unit(0.4, 'cm'),
-    legend.position = c(0.18, 0.6),
-    strip.text = element_text(size = 14, face = "bold")
+    legend.position = "inside",
+    legend.position.inside = c(0.18, 0.55),
+    strip.text = element_text(size = 14,
+                              face = "bold")
   )
 
 map_plot
 
 ggsave("mapa_porownawcza_1950_2023_u5mr.png",
        map_plot,
-       height = 1656*3/4,
-       width = 2880*3/4,
+       height = 1656,
+       width = 2880,
        units = "px",
        bg = "transparent")
 # 
