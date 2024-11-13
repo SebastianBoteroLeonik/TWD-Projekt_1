@@ -172,7 +172,7 @@ stacked_barplot <- ggplot(causes_death_processed |>
                           # slice(1:(14*5)) , 
                           aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
   geom_bar(position = 'fill', stat="identity", width = 0.3) +
-  
+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
                                "black",
                                "#6A3D9A",
@@ -185,7 +185,8 @@ stacked_barplot <- ggplot(causes_death_processed |>
   theme_minimal() +
   theme(legend.text = element_text(size=5),
         legend.title = element_text(size=7),
-        legend.key.size = unit(0.2, 'cm'),
+        legend.key.width = unit(0.2, 'cm'),
+        legend.key.height = unit(0.4, 'cm'),
         legend.position = "bottom",
         axis.text=element_text(size=7),
         axis.title=element_text(size=7),
