@@ -20,6 +20,7 @@ world <- world |>
     region != "Mauritius",
     region != "Faroe Islands",
     region != "Comoros",
+    region != "Mayotte",
     !(region == "Ecuador" & !is.na(subregion))
   )
 
@@ -87,10 +88,14 @@ map_plot <- un_wpp |>
   geom_polygon(aes(fill = u5mr), colour = "#333333", size = 0.2) +
   # scale_fill_distiller(palette = "PuBuGn", direction = 1) +
   # scale_fill_distiller(palette = "Reds", direction = 1) +
-  scale_fill_gradient2(low = "#ccffdd",
-                       mid = "#ccaa44",
-                       high = "#bb0000",
-                       midpoint = 250) +
+  scale_fill_gradient2(low = "#44ff99",
+                       mid = "#eeaa33",
+                       high = "#ff0000",
+                       midpoint = 240) +
+  # scale_fill_gradient2(low = "#ccffdd",
+  #                      mid = "#ccaa44",
+  #                      high = "#bb0000",
+  #                      midpoint = 250) +
   # scale_fill_distiller(palette = "YlOrBr", direction = 1) +
   # scale_fill_distiller(palette = "YlOrRd", direction = 1) +
   labs(fill = "Under 5 mortality rate") +
