@@ -10,6 +10,19 @@ causes_death <- read.csv('../Mikolaj/CA-CODE-2024-Under5.csv')
 
 world <- map_data("world")
 
+world <- world |>
+  filter(
+    !(long < -130 & lat > -90 & lat < 50),
+    !(long > 130 & lat > 0 & lat < 30),
+    region != "Antarctica",
+    region != "Fiji",
+    region != "Kiribati",
+    region != "Mauritius",
+    region != "Faroe Islands",
+    region != "Comoros",
+    !(region == "Ecuador" & !is.na(subregion))
+  )
+
 fix_names <- function(x, replacements){
   for (i in 1:nrow(replacements)) {
     x <- replace(x, x == replacements[i, 1], replacements[i, 2])
@@ -86,6 +99,11 @@ map_plot <- un_wpp |>
         y = NULL) +
   theme_void() +
   theme(
+    legend.text = element_text(size=5),
+    legend.title = element_text(size=7),
+    legend.key.size = unit(0.4, 'cm'),
+    legend.position = "inside",
+    legend.position.inside = c(0.18, 0.55),
     strip.text = element_text(size = 14,
                               face = "bold")
   )
@@ -98,6 +116,9 @@ ggsave("mapa_porownawcza_1950_2023_u5mr.png",
        width = 2880,
        units = "px",
        bg = "transparent")
+
+
+
 
 # 
 # x <- un_wpp |>
