@@ -163,24 +163,30 @@ temp <- causes_death_processed |>
   group_by(country) |>
   summarise(sum_mortality = sum(mortality))
 
-causes_death_processed <- left_join(causes_death_processed, temp) |> arrange(desc(sum_mortality))
+causes_death_processed <- left_join(causes_death_processed, temp) |>
+  arrange(desc(sum_mortality))
 
-stacked_barplot <- ggplot(causes_death_processed |> 
-                            filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
-                                                  "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), #Benin, Japan, Guinea, UAE
-                          # filter(country %in% am_countries$Country_ISO) |> 
-                          # slice(1:(14*5)) , 
-                          aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
-  geom_bar(position = 'fill', stat="identity", width = 0.3) +
 
-  scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
-                               "black",
-                               "#6A3D9A",
-                               "skyblue2",
-                               "#FF7F00", "green4",
-                               "deeppink1", "palegreen2",
-                               "yellow3")) +
-  
+stacked_barplot <-  causes_death_processed |>
+  group_by(country, death_cause_type, sum_mortality) |>
+  summarise(mortality = sum(mortality)) |>
+  filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
+                        "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")) |>
+  #Benin, Japan, Guinea, UAE
+  # filter(country %in% am_countries$Country_ISO) |> 
+  # slice(1:(14*5)) , 
+  ggplot(aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
+  geom_bar(position = 'fill', stat="identity", width = 0.3,
+           colour = "black",
+           linewidth = 0.1) +
+  # scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
+  #                              "black",
+  #                              "#6A3D9A",
+  #                              "skyblue2",
+  #                              "#FF7F00", "green4",
+  #                              "deeppink1", "palegreen2",
+  #                              "yellow3")) +
+  scale_fill_brewer(palette = "Set3") +
   scale_x_continuous(expand = c(0.005,0)) +
   theme_minimal() +
   theme(legend.text = element_text(size=5),
