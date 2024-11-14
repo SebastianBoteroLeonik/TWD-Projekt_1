@@ -2,7 +2,7 @@ library(dplyr)
 library(readxl)
 library(countries) # potrzebne aby szybko wybrać z un_wpp tylko kraje, a nie np UE czy kontynent
 library(ggplot2)
-library(africamonitor) # potrzebne aby wybrać same kraje afrykańskie
+#library(africamonitor) # potrzebne aby wybrać same kraje afrykańskie
 library(ggridges) # dodatek do ggplot, potrzebne do wykresu korzystającego z unigme_by_sex_processed
 library(countrycode) # potrzebne do dopasowania krajów do kontynentów dla wykresu korzystającego z unigme_by_sex_processed
 library(forcats)
@@ -170,19 +170,26 @@ respiratory infections, Tuberculosis)',
 
 temp <- causes_death_processed |>
   group_by(country) |>
-  summarise(sum_mortality = sum(mortality))
+  summarise(sum_mortality_of_country = sum(mortality))
 
-causes_death_processed <- left_join(causes_death_processed, temp) |> arrange(desc(sum_mortality))
+causes_death_processed <- left_join(causes_death_processed, temp) |>
+  arrange(desc(sum_mortality_of_country))
 
-stacked_barplot <- ggplot(causes_death_processed |> 
-                            filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
-                                                  "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")), 
+
+stacked_barplot <- causes_death_processed |> 
+  group_by(country, death_cause_type, sum_mortality_of_country) |>
+  summarise(sum_mortality_of_cause_type = sum(mortality)) |>
+  filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
+                        "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")) |> 
+  
                           #Benin, Japan, Guinea, UAE
                           # filter(country %in% am_countries$Country_ISO) |> 
                           # slice(1:(14*5)) , 
-                          aes(x = mortality, y = fct_inorder(country), fill = death_cause_type)) +
-  geom_bar(position = 'fill', stat="identity", width = 0.3) +
-  
+  ggplot(aes(x = sum_mortality_of_cause_type, y = fct_inorder(country), fill = death_cause_type)) +                        
+  geom_bar(position = 'fill', stat="identity", width = 0.3,
+           colour = "black",
+           linewidth = 0.1
+           ) +
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
                                "black",
                                "#6A3D9A",
@@ -199,7 +206,7 @@ stacked_barplot <- ggplot(causes_death_processed |>
         legend.key.height = unit(0.4, 'cm'),
         legend.position = "bottom",
         axis.text=element_text(size=7),
-        axis.title=element_text(size=7),
+        axis.title=element_text(size=9),
         rect = element_rect(fill = "transparent"),
         panel.grid = element_line(colour = "black"),
         aspect.ratio = 1/5,
@@ -274,12 +281,12 @@ sex_ridgelines <- unigme_by_sex_processed |>
   # theme_minimal() +
   theme(
     legend.position = c(0.77, 0.8),
-    legend.text = element_text(size=4),
-    legend.title = element_text(size=6),
-    legend.key.size = unit(0.2, 'cm'),
-    axis.text = element_text(size=5),
-    axis.title.y = element_text(size=7),
-    axis.title.x = element_text(size=8, face = 'bold'),
+    legend.text = element_text(size=9),
+    legend.title = element_text(size=13),
+    legend.key.size = unit(0.4, 'cm'),
+    axis.text = element_text(size=7),
+    axis.title.y = element_text(size=9),
+    axis.title.x = element_text(size=10, face = 'bold'),
     rect = element_rect(fill = "transparent"),
     panel.grid = element_line(colour = "#555555"),
     # panel.grid.minor = element_line(colour = "black"),
