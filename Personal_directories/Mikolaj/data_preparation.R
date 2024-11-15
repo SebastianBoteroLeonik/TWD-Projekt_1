@@ -64,6 +64,7 @@ un_wpp_1950 <- un_wpp |>
 #  group_by(country,survey_name) |> count(survey_name) |> group_by(survey_name) |> count() |> arrange(desc(n)) 
 
 
+white <- "#dddddd"
 
 
 unigme_wealth <- read_xlsx('UNIGME-2023-Wealth-quintile-U5MR-database.xlsx',3)
@@ -129,9 +130,14 @@ violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
   theme(legend.position = "none",
         # axis.text=element_text(size=7),
         # axis.title=element_text(size=7),
-        axis.text.x = element_text(face = "bold"),
+        axis.text.x = element_text(face = "bold", colour = white),
+        axis.text = element_text(size = 9, colour = white),
+        axis.title = element_text(size = 13, colour = white),
+        aspect.ratio = 4/3,
         rect = element_rect(fill = "transparent"),
-        panel.grid = element_line(colour = "black"))
+        panel.grid.major = element_line(colour = white),
+        panel.grid.minor = element_blank())+
+  coord_flip()
 
 violin_wealth
 
@@ -187,11 +193,12 @@ stacked_barplot <- causes_death_processed |>
                           # slice(1:(14*5)) , 
   ggplot(aes(x = sum_mortality_of_cause_type, y = fct_inorder(country), fill = death_cause_type)) +                        
   geom_bar(position = 'fill', stat="identity", width = 0.3,
-           colour = "black",
-           linewidth = 0.1
+           # colour = white,
+           # linewidth = 0.1
            ) +
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
-                               "black",
+                               # "black",
+                               "grey",
                                "#6A3D9A",
                                "skyblue2",
                                "#FF7F00", "green4",
@@ -200,24 +207,24 @@ stacked_barplot <- causes_death_processed |>
   #scale_fill_brewer(palette = "Set3") +
   scale_x_continuous(expand = c(0.005,0)) +
   theme_minimal() +
-  theme(legend.text = element_text(size=5),
-        legend.title = element_text(size=7),
+  theme(legend.text = element_text(size=8, colour = white),
+        legend.title = element_text(size=10, colour = white),
         legend.key.width = unit(0.2, 'cm'),
-        legend.key.height = unit(0.4, 'cm'),
+        legend.key.height = unit(0.5, 'cm'),
         legend.position = "bottom",
-        axis.text=element_text(size=7),
-        axis.title=element_text(size=9),
+        axis.text = element_text(size=9, colour = white),
+        axis.title = element_text(size=11, colour = white),
         rect = element_rect(fill = "transparent"),
-        panel.grid = element_line(colour = "black"),
-        aspect.ratio = 1/5,
-        plot.title = element_text(hjust = 0.5, size = 8, face = 'bold')
+        panel.grid = element_line(colour = white),
+        aspect.ratio = 1/3,
+        plot.title = element_text(hjust = 0.5, size = 8, face = 'bold', colour = white)
   ) +
   labs(
     #title = "Death causes in different countries",
     x = "Death cause fractions",
     y = "Country",
-    fill = "Death cause"
-  ) 
+    fill = "Death cause:"
+  )
 
 stacked_barplot
 
@@ -263,12 +270,14 @@ unigme_by_sex_processed$continent = countrycode(sourcevar = as.data.frame(unigme
                                                 destination = "continent")
 
 sex_ridgelines <- unigme_by_sex_processed |>
-  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
+  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version',
+         sex  %in% c('Female', 'Male'), u5mr > 0) |>
   group_by(country) |> 
   slice_max(n= 1,order_by=tibble(year,reference_date)) |>
   arrange(desc(sex)) |>
   ggplot(aes(x = as.numeric(u5mr), y = continent, fill = fct_inorder(sex))) +
-  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE, quantiles = 2) +
+  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE,
+                      quantiles = 2, colour = white) +
   # facet_wrap(~sex) +
   scale_x_sqrt() +
   scale_fill_manual(values = c(
@@ -280,17 +289,19 @@ sex_ridgelines <- unigme_by_sex_processed |>
   theme_ridges() +
   # theme_minimal() +
   theme(
-    legend.position = c(0.77, 0.8),
-    legend.text = element_text(size=9),
-    legend.title = element_text(size=13),
+    # legend.position = c(0.65, 0.8),
+    legend.position = c(0.1, 0.04),
+    legend.text = element_text(size=11, colour = white),
+    legend.title = element_text(size=12, colour = white),
     legend.key.size = unit(0.4, 'cm'),
-    axis.text = element_text(size=7),
-    axis.title.y = element_text(size=9),
-    axis.title.x = element_text(size=10, face = 'bold'),
+    axis.text = element_text(size=11, colour = white),
+    axis.title.y = element_text(size=9, colour = white),
+    axis.title.x = element_text(size=11, face = 'bold', colour = white),
     rect = element_rect(fill = "transparent"),
-    panel.grid = element_line(colour = "#555555"),
+    # panel.grid = element_line(colour = "#555555"),
+    panel.grid = element_line(colour = white),
     # panel.grid.minor = element_line(colour = "black"),
-    panel.grid.major = element_line(colour = "#555555")
+    # panel.grid.major = element_line(colour = "#555555")
   ) +
   labs(
     x = "Under 5 mortality rate (Deaths/1000 births) - sqrt scale",
@@ -440,13 +451,12 @@ map_plot <- un_wpp |>
         y = NULL) +
   theme_void() +
   theme(
-    legend.text = element_text(size=5),
-    legend.title = element_text(size=7),
+    legend.text = element_text(size=5, colour = white),
+    legend.title = element_text(size=7, colour = white),
     legend.key.size = unit(0.4, 'cm'),
     legend.position = "inside",
     legend.position.inside = c(0.18, 0.55),
-    strip.text = element_text(size = 14,
-                              face = "bold")
+    strip.text = element_text(size = 14, face = "bold", colour = white)
   )
 
 map_plot
