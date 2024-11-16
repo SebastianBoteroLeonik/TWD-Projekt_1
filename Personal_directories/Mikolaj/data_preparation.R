@@ -86,7 +86,8 @@ unigme_wealth_processed <- unigme_wealth |>
 uw_dem <- unigme_wealth_processed |> 
   filter(survey_name == 'Demographic and Health Survey') |> 
   group_by(country) |> 
-  slice_max(n= 1,order_by=tibble(year,reference_date)) 
+  slice_max(n= 1,order_by=tibble(year,reference_date)) |>
+  arrange(desc(wealth_quintile))
   # mutate(wealth_quintile = case_when(
   #   wealth_group == 1 ~ 'Poorest\n(0%-20%)',
   #   wealth_group == 2 ~ 'Poorer\n(20%-40%)',
@@ -106,7 +107,7 @@ uw_dem <- unigme_wealth_processed |>
 
 # Moim zdaniem ten wykres ma lepsze dane
 
-violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
+violin_wealth <- ggplot(uw_dem, aes(fct_inorder(wealth_quintile), u5mr))+
   geom_violin(draw_quantiles = c(0.25, 0.5, 0.75),
               colour = "#101044",
               fill = "#338df3") +
@@ -119,13 +120,6 @@ violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
   # scale_colour_brewer(palette = "Set1") +
   labs(y = "Under 5 mortality rate (Deaths/1000 births)",
        x = "Wealth quintile") +
-  scale_x_discrete(labels = c(
-    'Poorest\n(0%-20%)',
-    'Poorer\n(20%-40%)',
-    'Middle\n(40%-60%)',
-    'Wealthier\n(60%-80%)',
-    'Wealthiest\n(80%-100%)'
-  )) +
   theme_minimal() +
   theme(legend.position = "none",
         # axis.text=element_text(size=7),
@@ -137,7 +131,14 @@ violin_wealth <- ggplot(uw_dem, aes(wealth_quintile, u5mr))+
         rect = element_rect(fill = "transparent"),
         panel.grid.major = element_line(colour = white),
         panel.grid.minor = element_blank())+
-  coord_flip()
+  coord_flip() +
+  scale_x_discrete(labels = c(
+    'Wealthiest\n(80%-100%)',
+    'Wealthier\n(60%-80%)',
+    'Middle\n(40%-60%)',
+    'Poorer\n(20%-40%)',
+    'Poorest\n(0%-20%)'
+  ))
 
 violin_wealth
 
@@ -178,8 +179,7 @@ temp <- causes_death_processed |>
   group_by(country) |>
   summarise(sum_mortality_of_country = sum(mortality))
 
-causes_death_processed <- left_join(causes_death_processed, temp) |>
-  arrange(desc(sum_mortality_of_country))
+causes_death_processed <- left_join(causes_death_processed, temp)
 
 
 stacked_barplot <- causes_death_processed |> 
@@ -187,18 +187,20 @@ stacked_barplot <- causes_death_processed |>
   summarise(sum_mortality_of_cause_type = sum(mortality)) |>
   filter(country %in% c('Niger', 'Nigeria', "Somalia", "Chad", "Sierra Leone", "CAR", 
                         "Venezuela", "China", "Poland", "Singapore", "Estonia","Norway")) |> 
+  arrange(desc(sum_mortality_of_country)) |>
   
                           #Benin, Japan, Guinea, UAE
                           # filter(country %in% am_countries$Country_ISO) |> 
                           # slice(1:(14*5)) , 
   ggplot(aes(x = sum_mortality_of_cause_type, y = fct_inorder(country), fill = death_cause_type)) +                        
   geom_bar(position = 'fill', stat="identity", width = 0.3,
-           # colour = white,
+           # colour = "black",
            # linewidth = 0.1
            ) +
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
-                               # "black",
-                               "grey",
+                               #"black",
+                               #'grey',
+                               'white',
                                "#6A3D9A",
                                "skyblue2",
                                "#FF7F00", "green4",
@@ -224,7 +226,7 @@ stacked_barplot <- causes_death_processed |>
     x = "Death cause fractions",
     y = "Country",
     fill = "Death cause:"
-  )
+  ) 
 
 stacked_barplot
 
@@ -270,14 +272,12 @@ unigme_by_sex_processed$continent = countrycode(sourcevar = as.data.frame(unigme
                                                 destination = "continent")
 
 sex_ridgelines <- unigme_by_sex_processed |>
-  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version',
-         sex  %in% c('Female', 'Male'), u5mr > 0) |>
+  filter(survey_name == 'VR Submitted to WHO/UNIGME 2023 version', sex  %in% c('Female', 'Male'), u5mr > 0) |>
   group_by(country) |> 
   slice_max(n= 1,order_by=tibble(year,reference_date)) |>
   arrange(desc(sex)) |>
   ggplot(aes(x = as.numeric(u5mr), y = continent, fill = fct_inorder(sex))) +
-  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE,
-                      quantiles = 2, colour = white) +
+  stat_density_ridges(scale = 1.3, alpha = 0.7, quantile_lines = TRUE, quantiles = 2, color = white) +
   # facet_wrap(~sex) +
   scale_x_sqrt() +
   scale_fill_manual(values = c(
@@ -289,6 +289,7 @@ sex_ridgelines <- unigme_by_sex_processed |>
   theme_ridges() +
   # theme_minimal() +
   theme(
+    # legend.position = c(0.77, 0.8),
     # legend.position = c(0.65, 0.8),
     legend.position = c(0.1, 0.04),
     legend.text = element_text(size=11, colour = white),
