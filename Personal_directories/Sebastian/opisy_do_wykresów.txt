@@ -1,0 +1,7 @@
+mapa:
+This map shows how things have changed since the middle of the last century. In 1950 only a few countries around the world allowed citizens to enjoy good health for their children. The world was clearly divided into the 1st, 2nd and 3rd world. The mortality rate among children born in countries outside the 1st world was staggering by today's standards. Things have vastly improved since then. Most countries in the world are now better off than even the best contenders of the 1950s. The relatively problematic area has now shrunk to little more than Central Africa. We can conclude that though there still is work to be done, we have come a long way towards a better future.
+
+
+violin_plot:
+On the violin plot we can see how child mortality is distributed among people of varying economic status. As is often the case in life, the rich tend to be better off, with low mortality rates across the board. However, it is important to note that the distributions for the less wealthy are not so much shifted as they are more widely spread. This is important as it means that in many countries poorer children do not have poorer chances of surviving until they're 5.
+
