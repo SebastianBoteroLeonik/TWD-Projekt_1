@@ -1,0 +1,7 @@
+Is sex making a difference? (dotyczy ridgeline - tytuł akapitu potencjalnie do zmiany)
+Creation of top-left chart was an attempt to explore the influence of sex on mortality rate for children under the age of five. It can be seen that, despite the notorious deficiency of civil rights for women in some countries, female under five mortality rate is lower, regardless of the continent. Furthermore, variances of distributions differs significantly.
+
+
+But what are the causes? (dotyczy barplota - tytuł akapitu potencjalnie do zmiany)
+Last, but not least, previous findings beg the question of whether certain diseases and conditions pose the same lethal threat to children under the age of five all over the world. The chart below shows that in various countries, which are sorted increasingly by total under five mortality rate, distributions of death causes vary considerably. Most distinctive examples are:
+fraction concerning birth-related conditions in Poland, amount of malaria and fraction concerning viral diseases in Somalia.
